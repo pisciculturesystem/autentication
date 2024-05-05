@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 
@@ -13,7 +14,7 @@ type UserDao struct {
 
 func (u *UserDao) Save(model *models.User) (int64, error) {
 
-	tx, err := u.db.Begin()
+	tx, err := u.db.BeginTx(context.Background(), &sql.TxOptions{ReadOnly: false})
 	if err != nil {
 		return 0, err
 	}
@@ -35,21 +36,21 @@ func (u *UserDao) Save(model *models.User) (int64, error) {
 
 	var id int64
 
-	sql = "INSERT INTO api.user(name, registration, idconfiguration) VALUES ($1, $2, $3) RETURNING id"
+	sql = "INSERT INTO api.user(name, registration, configuration_id) VALUES ($1, $2, $3) RETURNING id"
 	err = u.db.QueryRow(sql, model.Name, model.Registration, idconfiguration).Scan(&id)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
 	}
 
-	sql = "INSERT INTO api.mail(iduser, mail) VALUES($1, $2)"
+	sql = "INSERT INTO api.mail(user_id, mail) VALUES($1, $2)"
 	_, err = u.db.Exec(sql, id, model.Mail[0].Mail)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
 	}
 
-	sql = "INSERT INTO api.password(iduser, password) VALUES($1, $2)"
+	sql = "INSERT INTO api.password(user_id, password) VALUES($1, $2)"
 	_, err = u.db.Exec(sql, id, model.Password[0].Password)
 	if err != nil {
 		tx.Rollback()

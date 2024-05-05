@@ -17,8 +17,8 @@ func (a *AuthDao) FindUserByMailAndPassword(mail, password string) (*models.User
 	 SELECT u.id, 
 	        u.name
 	   FROM api.user u 
-	   JOIN api.mail m ON m.iduser = u.id
-	   JOIN api.password p ON p.iduser = u.id
+	   JOIN api.mail m ON m.user_id = u.id
+	   JOIN api.password p ON p.user_id = u.id
 	  WHERE m.mail = $1 
 	    AND m.endvalid IS NULL 
 	    AND p.password = $2
@@ -32,7 +32,7 @@ func (a *AuthDao) FindUserByMailAndPassword(mail, password string) (*models.User
 	err := row.Scan(&user.Id, &user.Name) //, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
-		return nil, errors.New("User not found")
+		return nil, errors.New("user not found")
 	}
 
 	return &user, nil

@@ -29,19 +29,19 @@ func (a *UserService) Create(input *vo.UserCreatedVO) (int64, error) {
 	}
 
 	if exist {
-		errors.New("Já existe um usuário cadastrado para este CPF")
+		errors.New("já existe um usuário cadastrado para este cpf")
 	}
 
 	exist = a.mailDao.ExistMail(input.Mail)
 
 	if exist {
-		return 0, errors.New("Já existe um usuário cadastrado com este e-mail")
+		return 0, errors.New("já existe um usuário cadastrado com este e-mail")
 	}
 
 	user := models.NewUser(input.Name, input.Registration, input.Mail, a.md5(input.Password))
 
 	if !user.IsValid() {
-		return 0, errors.New("Estrutura inválida")
+		return 0, errors.New("estrutura inválida")
 	}
 
 	id, err := a.userDao.Save(user)

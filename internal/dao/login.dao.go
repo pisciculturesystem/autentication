@@ -14,7 +14,7 @@ type LoginDao struct {
 func (l *LoginDao) Save(model *models.Login) error {
 
 	query := `
-	   INSERT INTO api.login(iduser, moment) VALUES ($1, $2) RETURNING id;
+	   INSERT INTO api.login(user_id, moment) VALUES ($1, $2) RETURNING id;
 	`
 	err := l.db.QueryRow(query, model.IdUser, time.Now()).Scan(&model.Id)
 

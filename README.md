@@ -1,2 +1,0 @@
-# autentication
-Microsserviço de autenticacao

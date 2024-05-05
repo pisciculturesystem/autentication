@@ -17,6 +17,7 @@ func (h *HttpServer) Start(port int) {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /auth/v1/login", h.PostAuth)
+	mux.HandleFunc("POST /auth/v1/validate", h.ValidatedAuthentication)
 	mux.HandleFunc("POST /auth/v1/register", h.Register)
 	mux.HandleFunc("POST /auth/v1/mail-available", h.MailAvailable)
 
