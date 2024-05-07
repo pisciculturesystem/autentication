@@ -1,73 +1,87 @@
 package service
 
 import (
-	"crypto/md5"
-	"encoding/hex"
+	"bytes"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/url"
 
-	"github.com/server/auth/infra/kafka"
-	"github.com/server/auth/internal/core/models"
-	"github.com/server/auth/internal/core/ports"
 	"github.com/server/auth/internal/vo"
 )
 
 type UserService struct {
-	userDao ports.UserDaoPort
-	mailDao ports.MailDaoPort
 }
 
-func (a *UserService) Create(input *vo.UserCreatedVO) (int64, error) {
+func (a *UserService) Create(input *vo.KeycloakUserVO) (string, error) {
 	if err := input.IsValid(); err != nil {
-		return 0, err
+		return "", err
 	}
 
-	exist, err := a.userDao.ExistByRegistration(input.Registration)
+	var urlAuth = "http://keycloak:7080/realms/pisciculture/protocol/openid-connect/token"
+	var urlCreateUser = "http://keycloak:7080/auth/admin/realms/pisciculture/users"
 
+	var auth = url.Values{
+		"client_id":     {"pisciculsoft"},
+		"client_secret": {"YJKvL0QvS7NL7h63Cjf5T9Y4v2tcdw39"},
+		"grant_type":    {"password"},
+		"username":      {"dev"},
+		"password":      {"123"},
+	}
+
+	req, err := http.PostForm(urlAuth, auth)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	if exist {
-		errors.New("já existe um usuário cadastrado para este cpf")
+	if req.StatusCode != http.StatusOK {
+		return "", errors.New("no autenticate")
 	}
 
-	exist = a.mailDao.ExistMail(input.Mail)
-
-	if exist {
-		return 0, errors.New("já existe um usuário cadastrado com este e-mail")
+	var keycloak vo.KeycloakTokenVO
+	if err := json.NewDecoder(req.Body).Decode(&keycloak); err != nil {
+		return "", err
 	}
 
-	user := models.NewUser(input.Name, input.Registration, input.Mail, a.md5(input.Password))
+	userJSON, err := json.Marshal(map[string]interface{}{
+		"username":      input.Username,
+		"enabled":       true,
+		"emailVerified": true,
+		"firstName":     input.FirstName,
+		"lastName":      input.LastName,
+		"email":         input.Mail,
+		"credentials": []interface{}{
+			map[string]interface{}{
+				"type":      "password",
+				"value":     input.Password,
+				"temporary": false,
+			},
+		},
+	})
 
-	if !user.IsValid() {
-		return 0, errors.New("estrutura inválida")
-	}
-
-	id, err := a.userDao.Save(user)
-
+	rq, err := http.NewRequest("POST", urlCreateUser, bytes.NewBuffer(userJSON))
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	if id > 0 {
-		mail := vo.NewSendMailVO(id, input.Name, input.Mail)
-		data, _ := json.Marshal(mail)
-		kafka.PostMessage("sendmail", string(data))
+	rq.Header.Set("Content-Type", "application/json")
+	rq.Header.Set("Authorization", "Bearer "+keycloak.AccessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(rq)
+	if err != nil {
+		return "", err
 	}
 
-	return id, nil
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return "", err
+	}
+
+	return "", nil
 }
 
-func (a *UserService) md5(password string) string {
-	hasher := md5.New()
-	hasher.Write([]byte(password))
-	return hex.EncodeToString(hasher.Sum(nil))
-}
-
-func NewUserService(userDao ports.UserDaoPort, mailDao ports.MailDaoPort) *UserService {
-	return &UserService{
-		userDao: userDao,
-		mailDao: mailDao,
-	}
+func NewUserService() *UserService {
+	return &UserService{}
 }

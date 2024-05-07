@@ -3,7 +3,6 @@ package service
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -14,14 +13,14 @@ import (
 type AuthService struct {
 }
 
-func (a *AuthService) Auth(mail, password string) (*map[string]interface{}, error) {
+func (a *AuthService) Auth(username, password string) (*map[string]interface{}, error) {
 
 	var form = url.Values{
 		"client_id":     {"pisciculsoft"},
-		"grant_type":    {"password"},
-		"username":      {mail},
-		"password":      {password},
 		"client_secret": {"YJKvL0QvS7NL7h63Cjf5T9Y4v2tcdw39"},
+		"grant_type":    {"password"},
+		"username":      {username},
+		"password":      {password},
 	}
 	var url = "http://keycloak:7080/realms/pisciculture/protocol/openid-connect/token"
 
@@ -47,7 +46,6 @@ func (a *AuthService) Auth(mail, password string) (*map[string]interface{}, erro
 }
 
 func (a *AuthService) ValidatedAuthentication(token string) (bool, error) {
-	fmt.Println(strings.Replace(token, "Bearer ", "", 1))
 	var form = url.Values{
 		"client_id":     {"pisciculsoft"},
 		"client_secret": {"YJKvL0QvS7NL7h63Cjf5T9Y4v2tcdw39"},

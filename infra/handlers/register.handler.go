@@ -10,19 +10,15 @@ import (
 )
 
 func (h *HttpServer) Register(w http.ResponseWriter, r *http.Request) {
-	var data vo.UserCreatedVO
 
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	var userVo vo.KeycloakUserVO
+	if err := json.NewDecoder(r.Body).Decode(&userVo); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 
-	userDao := dao.NewUserDao(h.db)
-	mailDao := dao.NewMailDao(h.db)
-	userService := service.NewUserService(userDao, mailDao)
-
-	id, err := userService.Create(&data)
+	id, err := service.NewUserService().Create(&userVo)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
