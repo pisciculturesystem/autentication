@@ -43,7 +43,7 @@ func (a *UserService) Create(input *vo.KeycloakUserVO) (string, error) {
 		return "", err
 	}
 
-	userJSON, err := json.Marshal(map[string]interface{}{
+	userJSON, _ := json.Marshal(map[string]interface{}{
 		"username":      input.Username,
 		"enabled":       true,
 		"emailVerified": true,
